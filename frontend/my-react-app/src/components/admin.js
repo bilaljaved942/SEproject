@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { adminLogin, adminSignup } from '../services/authServices';
 import './user.css';
 
 export function AdminLogin() {
@@ -8,6 +9,8 @@ export function AdminLogin() {
     password: '',
     securityKey: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -18,18 +21,34 @@ export function AdminLogin() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add admin login logic here (API calls, etc.)
-    console.log('Admin login submitted:', formData);
-    // Redirect to admin dashboard after successful login
-    // navigate('/admin/dashboard');
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await adminLogin(formData);
+      console.log('Admin login successful:', response.data);
+      
+      // Save token in localStorage
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userType', 'admin');
+      
+      // Redirect to admin dashboard
+      navigate('/admin/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-form-container">
         <h2>Admin Login</h2>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label>Username</label>
@@ -64,7 +83,9 @@ export function AdminLogin() {
               placeholder="Enter security key"
             />
           </div>
-          <button type="submit" className="auth-button">Login</button>
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
         </form>
         <div className="auth-links">
           <p>Need admin access? <span onClick={() => navigate('/signup-admin')} className="auth-link">Request access</span></p>
@@ -84,6 +105,8 @@ export function AdminSignup() {
     masterKey: '',
     role: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -94,22 +117,36 @@ export function AdminSignup() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setError("Passwords don't match!");
       return;
     }
-    // Add admin signup logic here (API calls, etc.)
-    console.log('Admin signup submitted:', formData);
-    // Redirect to login after successful signup
-    // navigate('/login-admin');
+    
+    setLoading(true);
+    setError('');
+    
+    // Remove confirmPassword from data sent to API
+    const { confirmPassword, ...signupData } = formData;
+    
+    try {
+      const response = await adminSignup(signupData);
+      console.log('Admin signup successful:', response.data);
+      navigate('/login-admin');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Signup failed. Please try again.');
+      console.error('Signup error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-form-container">
         <h2>Admin Registration</h2>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label>Full Name</label>
@@ -191,7 +228,9 @@ export function AdminSignup() {
               placeholder="Enter master security key"
             />
           </div>
-          <button type="submit" className="auth-button">Register</button>
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Registering...' : 'Register'}
+          </button>
         </form>
         <div className="auth-links">
           <p>Already have admin access? <span onClick={() => navigate('/login-admin')} className="auth-link">Login</span></p>

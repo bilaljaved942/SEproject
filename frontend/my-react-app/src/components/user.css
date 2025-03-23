@@ -74,6 +74,11 @@
   background-color: #e07b3b;
 }
 
+.auth-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 .auth-links {
   margin-top: 20px;
   text-align: center;
@@ -92,6 +97,16 @@
 
 .auth-link:hover {
   color: #e07b3b;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 14px;
 }
 
 @media (max-width: 480px) {

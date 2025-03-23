@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './user.css'; // You'll need to create this CSS file
+import { customerLogin, customerSignup } from '../services/authServices';
+import './user.css';
 
 export function CustomerLogin() {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -17,18 +20,34 @@ export function CustomerLogin() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add login logic here (API calls, etc.)
-    console.log('Customer login submitted:', formData);
-    // Redirect to customer dashboard after successful login
-    // navigate('/customer/dashboard');
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await customerLogin(formData);
+      console.log('Login successful:', response.data);
+      
+      // Save token in localStorage
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userType', 'customer');
+      
+      // Redirect to customer dashboard
+      navigate('/customer/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-form-container">
         <h2>Customer Login</h2>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label>Email</label>
@@ -52,7 +71,9 @@ export function CustomerLogin() {
               placeholder="Enter your password"
             />
           </div>
-          <button type="submit" className="auth-button">Login</button>
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
         </form>
         <div className="auth-links">
           <p>Don't have an account? <span onClick={() => navigate('/signup-customer')} className="auth-link">Sign up</span></p>
@@ -71,6 +92,8 @@ export function CustomerSignup() {
     confirmPassword: '',
     phone: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -81,22 +104,36 @@ export function CustomerSignup() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setError("Passwords don't match!");
       return;
     }
-    // Add signup logic here (API calls, etc.)
-    console.log('Customer signup submitted:', formData);
-    // Redirect to login after successful signup
-    // navigate('/login-customer');
+    
+    setLoading(true);
+    setError('');
+    
+    // Remove confirmPassword from data sent to API
+    const { confirmPassword, ...signupData } = formData;
+    
+    try {
+      const response = await customerSignup(signupData);
+      console.log('Signup successful:', response.data);
+      navigate('/login-customer');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Signup failed. Please try again.');
+      console.error('Signup error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-form-container">
         <h2>Customer Sign Up</h2>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label>Full Name</label>
@@ -153,7 +190,9 @@ export function CustomerSignup() {
               placeholder="Confirm your password"
             />
           </div>
-          <button type="submit" className="auth-button">Sign Up</button>
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Signing up...' : 'Sign Up'}
+          </button>
         </form>
         <div className="auth-links">
           <p>Already have an account? <span onClick={() => navigate('/login-customer')} className="auth-link">Login</span></p>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { staffLogin, staffSignup } from '../services/authServices';
 import './user.css';
 
 export function StaffLogin() {
@@ -7,6 +8,8 @@ export function StaffLogin() {
     employeeId: '',
     password: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -17,18 +20,34 @@ export function StaffLogin() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add staff login logic here (API calls, etc.)
-    console.log('Staff login submitted:', formData);
-    // Redirect to staff dashboard after successful login
-    // navigate('/staff/dashboard');
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await staffLogin(formData);
+      console.log('Staff login successful:', response.data);
+      
+      // Save token in localStorage
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userType', 'staff');
+      
+      // Redirect to staff dashboard
+      navigate('/staff/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-form-container">
         <h2>Staff Login</h2>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label>Employee ID</label>
@@ -52,7 +71,9 @@ export function StaffLogin() {
               placeholder="Enter your password"
             />
           </div>
-          <button type="submit" className="auth-button">Login</button>
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
         </form>
         <div className="auth-links">
           <p>New staff? <span onClick={() => navigate('/signup-staff')} className="auth-link">Request account</span></p>
@@ -72,6 +93,8 @@ export function StaffSignup() {
     position: '',
     code: '' // Authorization code for staff signup
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -82,18 +105,28 @@ export function StaffSignup() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add staff signup logic here (API calls, etc.)
-    console.log('Staff signup submitted:', formData);
-    // Redirect to login or confirmation page after successful signup
-    // navigate('/login-staff');
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await staffSignup(formData);
+      console.log('Staff signup successful:', response.data);
+      navigate('/login-staff');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Signup request failed. Please try again.');
+      console.error('Signup error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-form-container">
         <h2>Staff Account Request</h2>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label>Full Name</label>
@@ -165,7 +198,9 @@ export function StaffSignup() {
               placeholder="Enter authorization code"
             />
           </div>
-          <button type="submit" className="auth-button">Submit Request</button>
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Submitting...' : 'Submit Request'}
+          </button>
         </form>
         <div className="auth-links">
           <p>Already have an account? <span onClick={() => navigate('/login-staff')} className="auth-link">Login</span></p>
